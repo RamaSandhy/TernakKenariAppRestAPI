@@ -1,50 +1,40 @@
 import 'dart:convert';
-import 'package:canary_template/data/models/request/admin/anak_request_model.dart';
-import 'package:canary_template/data/models/response/get_all_anak_response_model.dart';
+import 'dart:io';
+
+import 'package:canary_template/data/models/response/burung_semua_tersedia_model.dart';
 import 'package:canary_template/service/service_http_client.dart';
 import 'package:dartz/dartz.dart';
 
-class AnakRepository {
-  final ServiceHttpClient _serviceHttpClient;
 
-  AnakRepository(this._serviceHttpClient);
+class GetAllBurungTersediaRepository {
+  final ServiceHttpClient httpClient;
+  GetAllBurungTersediaRepository(this.httpClient);
 
-  Future<Either<String, GetAnakById>> addAnak(
-    AnakRequestModel requestModel,
-  ) async {
+  Future<Either<String, BurungSemuaTersediaModel>>
+    getAllBurungTersedia() async {
     try {
-      final response = await _serviceHttpClient.postWithToken(
-        "admin/anak",
-        requestModel.toMap(),
-      );
-
-      if (response.statusCode == 201) {
-        final jsonResponse = json.decode(response.body);
-        final profileResponse = GetAnakById.fromJson(jsonResponse);
-        return Right(profileResponse);
-      } else {
-        final errorMessage = json.decode(response.body);
-        return Left(errorMessage['message'] ?? 'Unknown error occurred');
-      }
-    } catch (e) {
-      return Left("An error occurred while adding profile: $e");
-    }
-  }
-
-  Future<Either<String, GetAllAnakModel>> getAllAnak() async {
-    try {
-      final response = await _serviceHttpClient.get("admin/anak");
+      final response = await httpClient.get("buyer/burung-semua-tersedia");
 
       if (response.statusCode == 200) {
         final jsonResponse = json.decode(response.body);
-        final profileResponse = GetAllAnakModel.fromJson(jsonResponse);
-        return Right(profileResponse);
+        final burungTersediaResponse = BurungSemuaTersediaModel.fromJson(
+          jsonResponse,
+        );
+        return Right(burungTersediaResponse);
       } else {
         final errorMessage = json.decode(response.body);
         return Left(errorMessage['message'] ?? 'Unknown error occurred');
       }
     } catch (e) {
-      return Left("An error occurred while get all anak: $e");
+      if (e is SocketException) {
+        return Left("No Internet connection");
+      } else if (e is HttpException) {
+        return Left("HTTP error: ${e.message}");
+      } else if (e is FormatException) {
+        return Left("Invalid response format");
+      } else {
+        return Left("An unexpected error occurred: $e");
+      }
     }
   }
 }
